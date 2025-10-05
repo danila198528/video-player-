@@ -1,0 +1,353 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #1a1a1a;
+    color: white;
+    padding: 20px;
+    overflow-x: hidden;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    position: relative;
+}
+
+.video-container {
+    position: relative;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+#videoPlayer {
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+    background: black;
+}
+
+/* Скрываем кнопку fullscreen в нативных контролах видео */
+video::-webkit-media-controls-fullscreen-button {
+    display: none;
+}
+
+video::-moz-media-controls-fullscreen-button {
+    display: none;
+}
+
+/* КОНТЕЙНЕР СУБТИТРОВ - ОСНОВНЫЕ СТИЛИ */
+.subtitles-container {
+    position: absolute;
+    bottom: 80px;
+    left: 5%;
+    width: 90%;
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    color: white;
+    font-size: 18px;
+    line-height: 1.4;
+    z-index: 999999;
+    pointer-events: none;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+/* Режим двух колонок */
+.subtitles-dual-column {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    background: rgba(0, 0, 0, 0.75);
+    padding: 10px 15px;
+    border-radius: 8px;
+}
+
+/* В fullscreen режиме - полностью прозрачный фон */
+.video-container:fullscreen .subtitles-dual-column,
+.video-container:-webkit-full-screen .subtitles-dual-column,
+.video-container:-moz-full-screen .subtitles-dual-column,
+.video-container:-ms-fullscreen .subtitles-dual-column,
+body.fullscreen-mode .subtitles-dual-column {
+    background: transparent !important;
+}
+
+/* История субтитров - сверху, полупрозрачно */
+.subtitles-history {
+    margin-bottom: 10px;
+}
+
+.subtitles-history-item {
+    margin-bottom: 8px;
+    opacity: 0.6;
+}
+
+.subtitles-history-item .subtitles-dual-column {
+    background: transparent;
+    font-size: 0.85em;
+    padding: 8px 12px;
+}
+
+/* Текущие субтитры - ярче и крупнее */
+.subtitles-current .subtitles-dual-column {
+    background: transparent;
+    font-size: 1em;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9);
+}
+
+.subtitles-english {
+    text-align: left;
+    padding-right: 10px;
+}
+
+.subtitles-russian {
+    text-align: left;
+    padding-left: 10px;
+    border-left: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Добавляем тень для лучшей читаемости текста */
+.subtitles-english,
+.subtitles-russian {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9),
+                 -1px -1px 2px rgba(0, 0, 0, 0.9),
+                 1px -1px 2px rgba(0, 0, 0, 0.9),
+                 -1px 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+/* Режим последовательный */
+.subtitles-sequential .english-text {
+    margin-bottom: 10px;
+}
+
+.subtitles-sequential .russian-text {
+    border-top: 1px solid #555;
+    padding-top: 10px;
+}
+
+/* Стили для одиночных субтитров */
+.subtitles-single {
+    text-align: center;
+    color: white;
+    font-size: 18px;
+    line-height: 1.4;
+    padding: 10px;
+}
+
+/* Элементы управления */
+.controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    z-index: 1001;
+    position: relative;
+}
+
+button, select {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    background: #444;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #555;
+}
+
+.status {
+    padding: 10px;
+    background: #333;
+    border-radius: 5px;
+    min-height: 40px;
+    z-index: 1001;
+    position: relative;
+}
+
+/* Подсветка слов */
+.highlight-word {
+    color: #ff0000;
+    font-weight: bold;
+}
+
+/* Делитель для последовательного режима */
+.divider {
+    height: 1px;
+    background: #555;
+    margin: 8px 0;
+}
+
+/* ПОЛНОЭКРАННЫЙ РЕЖИМ - video-container становится fullscreen элементом */
+.video-container:fullscreen,
+.video-container:-webkit-full-screen,
+.video-container:-moz-full-screen,
+.video-container:-ms-fullscreen {
+    width: 100vw !important;
+    height: 100vh !important;
+    background: black !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+}
+
+.video-container:fullscreen #videoPlayer,
+.video-container:-webkit-full-screen #videoPlayer,
+.video-container:-moz-full-screen #videoPlayer,
+.video-container:-ms-fullscreen #videoPlayer {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    border-radius: 0 !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+}
+
+.video-container:fullscreen .subtitles-container,
+.video-container:-webkit-full-screen .subtitles-container,
+.video-container:-moz-full-screen .subtitles-container,
+.video-container:-ms-fullscreen .subtitles-container {
+    position: absolute !important;
+    bottom: 80px !important;
+    left: 5% !important;
+    right: 5% !important;
+    width: 90% !important;
+    max-width: none !important;
+    max-height: 80vh !important;
+    margin: 0 auto !important;
+    font-size: 24px !important;
+    line-height: 1.6 !important;
+    z-index: 2147483647 !important;
+    background: transparent !important;
+    color: white !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-end !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: none !important;
+    padding: 0 !important;
+    transform: none !important;
+    overflow: hidden !important;
+}
+
+/* Дополнительные стили для fullscreen-mode класса (резервный вариант) */
+body.fullscreen-mode {
+    padding: 0;
+    background: black;
+}
+
+body.fullscreen-mode .container {
+    max-width: none;
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+body.fullscreen-mode .video-container {
+    flex: 1;
+    margin: 0;
+    position: relative;
+    background: black;
+}
+
+body.fullscreen-mode #videoPlayer {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+    object-fit: contain;
+}
+
+body.fullscreen-mode .subtitles-container {
+    position: absolute !important;
+    bottom: 80px !important;
+    left: 5% !important;
+    right: 5% !important;
+    width: 90% !important;
+    max-width: none !important;
+    max-height: 80vh !important;
+    font-size: 24px !important;
+    z-index: 2147483647 !important;
+    background: transparent !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-end !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+}
+
+body.fullscreen-mode .controls {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 1200px;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 15px;
+    border-radius: 10px;
+    z-index: 2147483646;
+}
+
+body.fullscreen-mode .status {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 1200px;
+    z-index: 2147483646;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+    .subtitles-container {
+        font-size: 16px;
+        padding: 10px;
+        bottom: 60px;
+    }
+    
+    .subtitles-dual-column {
+        gap: 10px;
+        font-size: 14px;
+    }
+    
+    .controls {
+        flex-direction: column;
+    }
+    
+    button, select {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+    
+    /* Мобильный полноэкранный режим */
+    .video-container:fullscreen .subtitles-container,
+    .video-container:-webkit-full-screen .subtitles-container,
+    .video-container:-moz-full-screen .subtitles-container,
+    .video-container:-ms-fullscreen .subtitles-container,
+    body.fullscreen-mode .subtitles-container {
+        font-size: 18px !important;
+        bottom: 80px !important;
+    }
+    
+    body.fullscreen-mode .controls {
+        bottom: 10px;
+    }
+}

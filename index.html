@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Английский видеоплеер</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Видеоплеер -->
+        <div class="video-container" id="videoContainer">
+            <video id="videoPlayer" controls>
+                Ваш браузер не поддерживает видео.
+            </video>
+            <!-- КРИТИЧНО: Субтитры должны быть ВНУТРИ video-container -->
+            <div id="subtitlesContainer" class="subtitles-container"></div>
+        </div>
+
+        <!-- Панель управления -->
+        <div class="controls">
+            <button id="loadVideoBtn" onclick="loadVideo()" disabled>📁 Загрузить видео</button>
+            <button onclick="loadSubtitles('en')">📝 Англ. субтитры</button>
+            <button onclick="loadSubtitles('ru')">📝 Рус. субтитры</button>
+            <button onclick="loadDictionary()">📚 Загрузить словарь</button>
+            <button onclick="toggleFullscreen()">⛶ Полный экран</button>
+            
+            <!-- Режимы субтитров -->
+            <select id="subtitleMode" onchange="changeSubtitleMode(this.value)">
+                <option value="english-only">Только английский</option>
+                <option value="russian-only">Только русский</option>
+                <option value="sequential">EN → RU последовательно</option>
+                <option value="dual-column" selected>Две колонки EN | RU</option>
+            </select>
+        </div>
+
+        <!-- Статус -->
+        <div id="status" class="status"></div>
+    </div>
+
+    <!-- Скрытые input'ы для загрузки файлов -->
+    <input type="file" id="videoFile" accept="video/*" style="display: none">
+    <input type="file" id="enSubtitleFile" accept=".srt,.vtt" style="display: none">
+    <input type="file" id="ruSubtitleFile" accept=".srt,.vtt" style="display: none">
+    <input type="file" id="dictionaryFile" accept=".json" style="display: none">
+    <input type="file" id="dictionaryFile" accept=".json" style="display: none">
+
+    <script src="script.js"></script>
+</body>
+</html>
