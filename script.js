@@ -19,11 +19,14 @@ let isDictionaryLoaded = false;
 document.addEventListener('DOMContentLoaded', function() {
     videoPlayer = document.getElementById('videoPlayer');
     subtitlesContainer = document.getElementById('subtitlesContainer');
-    updateStatus('⚠️ Загрузите словарь чтобы разблокировать кнопку загрузки видео');
+    updateStatus('⏳ Загрузка словаря с сервера...');
     
     videoPlayer.addEventListener('error', function(e) {
         updateStatus('Ошибка видео: ' + getVideoError(videoPlayer.error));
     });
+    
+    // Автозагрузка словаря с GitHub
+    loadDictionaryAuto();
 });
 
 // ========== ПОСТРОЕНИЕ ИНДЕКСА СЛОВ ==========
@@ -47,7 +50,37 @@ function buildWordIndex() {
     console.log('Создан индекс:', wordSet.size, 'форм слов');
 }
 
-// ========== ЗАГРУЗКА СЛОВАРЯ ==========
+// ========== АВТОЗАГРУЗКА СЛОВАРЯ С GITHUB ==========
+function loadDictionaryAuto() {
+    fetch('dictionary.json')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Словарь не найден на сервере (HTTP ' + response.status + ')');
+            }
+            return response.json();
+        })
+        .then(data => {
+            wordDictionary = data;
+            buildWordIndex();
+            isDictionaryLoaded = true;
+            
+            // Разблокируем кнопку загрузки видео
+            const videoBtn = document.getElementById('loadVideoBtn');
+            if (videoBtn) {
+                videoBtn.disabled = false;
+            }
+            
+            updateStatus(`✅ Словарь загружен с сервера: ${Object.keys(wordDictionary).length} слов, ${wordSet.size} форм`);
+            console.log('✅ Словарь успешно загружен с GitHub');
+        })
+        .catch(error => {
+            isDictionaryLoaded = false;
+            updateStatus(`❌ Ошибка загрузки словаря: ${error.message}. Используйте кнопку "Загрузить словарь" для ручной загрузки.`);
+            console.error('Ошибка загрузки словаря:', error);
+        });
+}
+
+// ========== ЗАГРУЗКА СЛОВАРЯ ВРУЧНУЮ (ЗАПАСНОЙ ВАРИАНТ) ==========
 function loadDictionary() {
     document.getElementById('dictionaryFile').click();
 }
@@ -55,7 +88,7 @@ function loadDictionary() {
 document.getElementById('dictionaryFile').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (file) {
-        updateStatus('Загрузка словаря...');
+        updateStatus('⏳ Загрузка словаря из файла...');
         
         const reader = new FileReader();
         reader.onload = function(e) {
@@ -70,14 +103,14 @@ document.getElementById('dictionaryFile').addEventListener('change', function(e)
                     videoBtn.disabled = false;
                 }
                 
-                updateStatus(`✅ Словарь загружен: ${Object.keys(wordDictionary).length} слов, ${wordSet.size} форм`);
+                updateStatus(`✅ Словарь загружен из файла: ${Object.keys(wordDictionary).length} слов, ${wordSet.size} форм`);
                 
                 if (videoPlayer.currentTime > 0) {
                     showSubtitlesAtTime(videoPlayer.currentTime);
                 }
             } catch (error) {
                 isDictionaryLoaded = false;
-                updateStatus('❌ Ошибка: ' + error.message);
+                updateStatus('❌ Ошибка парсинга файла: ' + error.message);
             }
         };
         reader.onerror = function() {
