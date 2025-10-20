@@ -4,7 +4,390 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Английский видеоплеер</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #1a1a1a;
+    color: white;
+    padding: 20px;
+    overflow-x: hidden;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    position: relative;
+}
+
+.video-container {
+    position: relative;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+#videoPlayer {
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+    background: black;
+}
+
+/* Скрываем кнопку fullscreen в нативных контролах видео */
+video::-webkit-media-controls-fullscreen-button {
+    display: none;
+}
+
+video::-moz-media-controls-fullscreen-button {
+    display: none;
+}
+
+/* КОНТЕЙНЕР СУБТИТРОВ - ОСНОВНЫЕ СТИЛИ */
+.subtitles-container {
+    position: absolute;
+    bottom: var(--subtitle-bottom, 80px);
+    top: var(--subtitle-top, 20px);
+    left: 5%;
+    width: 90%;
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    color: white;
+    font-size: var(--subtitle-font-size, 18px);
+    line-height: 1.4;
+    z-index: 999999;
+    pointer-events: none;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+/* Режим двух колонок */
+.subtitles-dual-column {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    background: rgba(0, 0, 0, 0.75);
+    padding: 10px 15px;
+    border-radius: 8px;
+}
+
+/* В fullscreen режиме - полностью прозрачный фон */
+.video-container:fullscreen .subtitles-dual-column,
+.video-container:-webkit-full-screen .subtitles-dual-column,
+.video-container:-moz-full-screen .subtitles-dual-column,
+.video-container:-ms-fullscreen .subtitles-dual-column,
+body.fullscreen-mode .subtitles-dual-column {
+    background: transparent !important;
+}
+
+/* История субтитров - сверху, полупрозрачно */
+.subtitles-history {
+    margin-bottom: 10px;
+}
+
+.subtitles-history-item {
+    margin-bottom: 8px;
+    opacity: 0.6;
+}
+
+.subtitles-history-item .subtitles-dual-column {
+    background: transparent;
+    font-size: 0.85em;
+    padding: 8px 12px;
+}
+
+/* Текущие субтитры - ярче и крупнее */
+.subtitles-current .subtitles-dual-column {
+    background: transparent;
+    font-size: 1em;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9);
+}
+
+.subtitles-english {
+    text-align: left;
+    padding-right: 10px;
+}
+
+.subtitles-russian {
+    text-align: left;
+    padding-left: 10px;
+    border-left: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Добавляем тень для лучшей читаемости текста */
+.subtitles-english,
+.subtitles-russian {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9),
+                 -1px -1px 2px rgba(0, 0, 0, 0.9),
+                 1px -1px 2px rgba(0, 0, 0, 0.9),
+                 -1px 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+/* Режим последовательный */
+.subtitles-sequential .english-text {
+    margin-bottom: 10px;
+}
+
+.subtitles-sequential .russian-text {
+    border-top: 1px solid #555;
+    padding-top: 10px;
+}
+
+/* Стили для одиночных субтитров */
+.subtitles-single {
+    text-align: center;
+    color: white;
+    font-size: var(--subtitle-font-size, 18px);
+    line-height: 1.4;
+    padding: 10px;
+}
+
+/* Элементы управления */
+.controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    z-index: 1001;
+    position: relative;
+    align-items: center;
+}
+
+button, select {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    background: #444;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #555;
+}
+
+.status {
+    padding: 10px;
+    background: #333;
+    border-radius: 5px;
+    min-height: 40px;
+    z-index: 1001;
+    position: relative;
+}
+
+/* Настройки отображения */
+.setting-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: #333;
+    padding: 8px 12px;
+    border-radius: 5px;
+}
+
+.setting-group label {
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.setting-group input[type="number"] {
+    width: 60px;
+    padding: 5px;
+    border: 1px solid #555;
+    border-radius: 3px;
+    background: #222;
+    color: white;
+    text-align: center;
+}
+
+.setting-unit {
+    font-size: 12px;
+    color: #aaa;
+}
+
+/* Подсветка слов */
+.highlight-word {
+    color: #ff0000;
+    font-weight: bold;
+}
+
+/* Делитель для последовательного режима */
+.divider {
+    height: 1px;
+    background: #555;
+    margin: 8px 0;
+}
+
+/* ПОЛНОЭКРАННЫЙ РЕЖИМ - video-container становится fullscreen элементом */
+.video-container:fullscreen,
+.video-container:-webkit-full-screen,
+.video-container:-moz-full-screen,
+.video-container:-ms-fullscreen {
+    width: 100vw !important;
+    height: 100vh !important;
+    background: black !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+}
+
+.video-container:fullscreen #videoPlayer,
+.video-container:-webkit-full-screen #videoPlayer,
+.video-container:-moz-full-screen #videoPlayer,
+.video-container:-ms-fullscreen #videoPlayer {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    border-radius: 0 !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+}
+
+.video-container:fullscreen .subtitles-container,
+.video-container:-webkit-full-screen .subtitles-container,
+.video-container:-moz-full-screen .subtitles-container,
+.video-container:-ms-fullscreen .subtitles-container {
+    position: absolute !important;
+    bottom: var(--subtitle-bottom, 80px) !important;
+    top: var(--subtitle-top, 20px) !important;
+    left: 5% !important;
+    right: 5% !important;
+    width: 90% !important;
+    max-width: none !important;
+    margin: 0 auto !important;
+    font-size: var(--subtitle-font-size, 24px) !important;
+    line-height: 1.6 !important;
+    z-index: 2147483647 !important;
+    background: transparent !important;
+    color: white !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-end !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: none !important;
+    padding: 0 !important;
+    transform: none !important;
+    overflow: hidden !important;
+}
+
+/* Дополнительные стили для fullscreen-mode класса (резервный вариант) */
+body.fullscreen-mode {
+    padding: 0;
+    background: black;
+}
+
+body.fullscreen-mode .container {
+    max-width: none;
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+body.fullscreen-mode .video-container {
+    flex: 1;
+    margin: 0;
+    position: relative;
+    background: black;
+}
+
+body.fullscreen-mode #videoPlayer {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+    object-fit: contain;
+}
+
+body.fullscreen-mode .subtitles-container {
+    position: absolute !important;
+    bottom: var(--subtitle-bottom, 80px) !important;
+    top: var(--subtitle-top, 20px) !important;
+    left: 5% !important;
+    right: 5% !important;
+    width: 90% !important;
+    max-width: none !important;
+    font-size: var(--subtitle-font-size, 24px) !important;
+    z-index: 2147483647 !important;
+    background: transparent !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-end !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+}
+
+body.fullscreen-mode .controls {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 1200px;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 15px;
+    border-radius: 10px;
+    z-index: 2147483646;
+}
+
+body.fullscreen-mode .status {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 1200px;
+    z-index: 2147483646;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+    .subtitles-container {
+        font-size: var(--subtitle-font-size, 16px);
+        padding: 10px;
+    }
+    
+    .subtitles-dual-column {
+        gap: 10px;
+        font-size: 14px;
+    }
+    
+    .controls {
+        flex-direction: column;
+    }
+    
+    button, select, .setting-group {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+    
+    /* Мобильный полноэкранный режим */
+    .video-container:fullscreen .subtitles-container,
+    .video-container:-webkit-full-screen .subtitles-container,
+    .video-container:-moz-full-screen .subtitles-container,
+    .video-container:-ms-fullscreen .subtitles-container,
+    body.fullscreen-mode .subtitles-container {
+        font-size: var(--subtitle-font-size, 18px) !important;
+    }
+    
+    body.fullscreen-mode .controls {
+        bottom: 10px;
+    }
+}
+    </style>
 </head>
 <body>
     <div class="container">
@@ -32,6 +415,25 @@
                 <option value="sequential">EN → RU последовательно</option>
                 <option value="dual-column" selected>Две колонки EN | RU</option>
             </select>
+            
+            <!-- Настройки отображения -->
+            <div class="setting-group">
+                <label for="fontSizeInput">Шрифт:</label>
+                <input type="number" id="fontSizeInput" min="12" max="48" value="18" onchange="updateFontSize(this.value)">
+                <span class="setting-unit">px</span>
+            </div>
+            
+            <div class="setting-group">
+                <label for="topOffsetInput">Отступ сверху:</label>
+                <input type="number" id="topOffsetInput" min="0" max="200" value="20" onchange="updateTopOffset(this.value)">
+                <span class="setting-unit">px</span>
+            </div>
+            
+            <div class="setting-group">
+                <label for="bottomOffsetInput">Отступ снизу:</label>
+                <input type="number" id="bottomOffsetInput" min="0" max="300" value="80" onchange="updateBottomOffset(this.value)">
+                <span class="setting-unit">px</span>
+            </div>
         </div>
 
         <!-- Статус -->
@@ -44,6 +446,628 @@
     <input type="file" id="ruSubtitleFile" style="display: none">
     <input type="file" id="dictionaryFile" style="display: none">
 
-    <script src="script.js"></script>
+    <script>
+// ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
+let videoPlayer;
+let subtitlesContainer;
+let englishSubtitles = [];
+let russianSubtitles = [];
+let syncedSubtitles = [];
+let currentSubtitleMode = 'dual-column';
+let subtitleInterval;
+let subtitleHistory = [];
+let currentSubtitleIndex = -1;
+
+// Словарь для подсветки
+let wordDictionary = {};
+let wordSet = new Set();
+let highlightRegex = null;
+let isDictionaryLoaded = false;
+
+// Настройки отображения
+let currentFontSize = 18;
+let currentTopOffset = 20;
+let currentBottomOffset = 80;
+
+// ========== ИНИЦИАЛИЗАЦИЯ ==========
+document.addEventListener('DOMContentLoaded', function() {
+    videoPlayer = document.getElementById('videoPlayer');
+    subtitlesContainer = document.getElementById('subtitlesContainer');
+    updateStatus('⏳ Загрузка словаря с сервера...');
+    
+    // Инициализация CSS переменных
+    updateCSSVariables();
+    
+    videoPlayer.addEventListener('error', function(e) {
+        updateStatus('Ошибка видео: ' + getVideoError(videoPlayer.error));
+    });
+    
+    // Автозагрузка словаря с GitHub
+    loadDictionaryAuto();
+});
+
+// ========== ОБНОВЛЕНИЕ CSS ПЕРЕМЕННЫХ ==========
+function updateCSSVariables() {
+    document.documentElement.style.setProperty('--subtitle-font-size', currentFontSize + 'px');
+    document.documentElement.style.setProperty('--subtitle-top', currentTopOffset + 'px');
+    document.documentElement.style.setProperty('--subtitle-bottom', currentBottomOffset + 'px');
+}
+
+// ========== ФУНКЦИИ НАСТРОЙКИ ОТОБРАЖЕНИЯ ==========
+function updateFontSize(value) {
+    currentFontSize = parseInt(value) || 18;
+    updateCSSVariables();
+    showSubtitlesAtTime(videoPlayer.currentTime);
+}
+
+function updateTopOffset(value) {
+    currentTopOffset = parseInt(value) || 20;
+    updateCSSVariables();
+}
+
+function updateBottomOffset(value) {
+    currentBottomOffset = parseInt(value) || 80;
+    updateCSSVariables();
+}
+
+// ========== ПОСТРОЕНИЕ ИНДЕКСА СЛОВ ==========
+function buildWordIndex() {
+    wordSet.clear();
+    const allWords = [];
+    
+    for (const [baseWord, forms] of Object.entries(wordDictionary)) {
+        forms.forEach(form => {
+            const normalized = form.toLowerCase();
+            wordSet.add(normalized);
+            allWords.push(normalized);
+        });
+    }
+    
+    allWords.sort((a, b) => b.length - a.length);
+    const escapedWords = allWords.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const pattern = '\\b(' + escapedWords.join('|') + ')\\b';
+    highlightRegex = new RegExp(pattern, 'gi');
+    
+    console.log('Создан индекс:', wordSet.size, 'форм слов');
+}
+
+// ========== АВТОЗАГРУЗКА СЛОВАРЯ С GITHUB ==========
+function loadDictionaryAuto() {
+    fetch('dictionary.json')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Словарь не найден на сервере (HTTP ' + response.status + ')');
+            }
+            return response.json();
+        })
+        .then(data => {
+            wordDictionary = data;
+            buildWordIndex();
+            isDictionaryLoaded = true;
+            
+            // Разблокируем кнопку загрузки видео
+            const videoBtn = document.getElementById('loadVideoBtn');
+            if (videoBtn) {
+                videoBtn.disabled = false;
+            }
+            
+            updateStatus(`✅ Словарь загружен с сервера: ${Object.keys(wordDictionary).length} слов, ${wordSet.size} форм`);
+            console.log('✅ Словарь успешно загружен с GitHub');
+        })
+        .catch(error => {
+            isDictionaryLoaded = false;
+            updateStatus(`❌ Ошибка загрузки словаря: ${error.message}. Используйте кнопку "Загрузить словарь" для ручной загрузки.`);
+            console.error('Ошибка загрузки словаря:', error);
+        });
+}
+
+// ========== ЗАГРУЗКА СЛОВАРЯ ВРУЧНУЮ (ЗАПАСНОЙ ВАРИАНТ) ==========
+function loadDictionary() {
+    document.getElementById('dictionaryFile').click();
+}
+
+document.getElementById('dictionaryFile').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        updateStatus('⏳ Загрузка словаря из файла...');
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                wordDictionary = JSON.parse(e.target.result);
+                buildWordIndex();
+                isDictionaryLoaded = true;
+                
+                // Разблокируем кнопку загрузки видео
+                const videoBtn = document.getElementById('loadVideoBtn');
+                if (videoBtn) {
+                    videoBtn.disabled = false;
+                }
+                
+                updateStatus(`✅ Словарь загружен из файла: ${Object.keys(wordDictionary).length} слов, ${wordSet.size} форм`);
+                
+                if (videoPlayer.currentTime > 0) {
+                    showSubtitlesAtTime(videoPlayer.currentTime);
+                }
+            } catch (error) {
+                isDictionaryLoaded = false;
+                updateStatus('❌ Ошибка парсинга файла: ' + error.message);
+            }
+        };
+        reader.onerror = function() {
+            isDictionaryLoaded = false;
+            updateStatus('❌ Ошибка чтения файла');
+        };
+        reader.readAsText(file, 'UTF-8');
+    }
+});
+
+// ========== ЗАГРУЗКА ВИДЕО ==========
+function loadVideo() {
+    if (!isDictionaryLoaded) {
+        alert('Сначала загрузите словарь!');
+        return;
+    }
+    document.getElementById('videoFile').click();
+}
+
+document.getElementById('videoFile').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        if (!file.type.startsWith('video/')) {
+            updateStatus('Ошибка: выберите видеофайл');
+            return;
+        }
+        
+        if (subtitleInterval) {
+            clearInterval(subtitleInterval);
+        }
+        
+        const videoURL = URL.createObjectURL(file);
+        videoPlayer.src = videoURL;
+        updateStatus(`Видео загружено: ${file.name}`);
+        
+        subtitlesContainer.innerHTML = '';
+        englishSubtitles = [];
+        russianSubtitles = [];
+        syncedSubtitles = [];
+        subtitleHistory = [];
+    }
+});
+
+// ========== ЗАГРУЗКА СУБТИТРОВ ==========
+function loadSubtitles(lang) {
+    const fileInput = lang === 'en' ? 'enSubtitleFile' : 'ruSubtitleFile';
+    document.getElementById(fileInput).click();
+}
+
+document.getElementById('enSubtitleFile').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) parseSubtitles(file, 'en');
+});
+
+document.getElementById('ruSubtitleFile').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) parseSubtitles(file, 'ru');
+});
+
+function parseSubtitles(file, lang) {
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        try {
+            let text = e.target.result;
+            if (text.charCodeAt(0) === 0xFEFF) {
+                text = text.substring(1);
+            }
+            
+            const subtitles = parseSRT(text);
+            
+            if (lang === 'en') {
+                englishSubtitles = subtitles;
+                updateStatus(`Английские субтитры: ${subtitles.length} фраз`);
+            } else {
+                russianSubtitles = subtitles;
+                updateStatus(`Русские субтитры: ${subtitles.length} фраз`);
+            }
+            
+            if (englishSubtitles.length > 0 && russianSubtitles.length > 0) {
+                syncSubtitles();
+            }
+            
+            if (videoPlayer.src) {
+                startSubtitleTracking();
+                showSubtitlesAtTime(videoPlayer.currentTime);
+            }
+        } catch (error) {
+            updateStatus('Ошибка парсинга: ' + error.message);
+        }
+    };
+    
+    reader.readAsText(file, 'UTF-8');
+}
+
+function parseSRT(data) {
+    const subtitles = [];
+    const normalizedData = data.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const blocks = normalizedData.split('\n\n');
+    
+    for (const block of blocks) {
+        if (block.trim() === '') continue;
+        
+        const lines = block.split('\n').filter(line => line.trim() !== '');
+        if (lines.length < 3) continue;
+        
+        let timeLineIndex = -1;
+        for (let i = 0; i < Math.min(3, lines.length); i++) {
+            if (lines[i].includes('-->')) {
+                timeLineIndex = i;
+                break;
+            }
+        }
+        
+        if (timeLineIndex === -1) continue;
+        
+        const timeMatch = lines[timeLineIndex].match(/(\d+):(\d+):(\d+)[,.](\d+)\s*-->\s*(\d+):(\d+):(\d+)[,.](\d+)/);
+        if (!timeMatch) continue;
+        
+        const startTime = timeToSeconds(timeMatch[1], timeMatch[2], timeMatch[3], timeMatch[4]);
+        const endTime = timeToSeconds(timeMatch[5], timeMatch[6], timeMatch[7], timeMatch[8]);
+        
+        const textLines = lines.slice(timeLineIndex + 1);
+        const text = textLines.join(' ').trim();
+        
+        if (text) {
+            subtitles.push({ start: startTime, end: endTime, text: text });
+        }
+    }
+    
+    subtitles.sort((a, b) => a.start - b.start);
+    return subtitles;
+}
+
+function timeToSeconds(hours, minutes, seconds, milliseconds) {
+    let ms = parseInt(milliseconds);
+    if (milliseconds.length === 2) ms = ms * 10;
+    else if (milliseconds.length === 1) ms = ms * 100;
+    
+    return parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds) + ms / 1000;
+}
+
+// ========== СИНХРОНИЗАЦИЯ СУБТИТРОВ ==========
+function syncSubtitles() {
+    syncedSubtitles = [];
+    const usedRussianIndexes = new Set();
+    
+    for (let i = 0; i < englishSubtitles.length; i++) {
+        const enSub = englishSubtitles[i];
+        let bestMatch = null;
+        let bestMatchIndex = -1;
+        let maxOverlap = 0;
+        
+        for (let j = 0; j < russianSubtitles.length; j++) {
+            if (usedRussianIndexes.has(j)) continue;
+            
+            const ruSub = russianSubtitles[j];
+            const overlapStart = Math.max(enSub.start, ruSub.start);
+            const overlapEnd = Math.min(enSub.end, ruSub.end);
+            const overlap = Math.max(0, overlapEnd - overlapStart);
+            const timeDiff = Math.abs(enSub.start - ruSub.start);
+            
+            if (overlap > 0 || timeDiff < 3) {
+                const score = overlap - timeDiff * 0.1;
+                if (score > maxOverlap) {
+                    maxOverlap = score;
+                    bestMatch = ruSub;
+                    bestMatchIndex = j;
+                }
+            }
+        }
+        
+        if (bestMatchIndex !== -1) {
+            usedRussianIndexes.add(bestMatchIndex);
+        }
+        
+        syncedSubtitles.push({
+            index: i,
+            en: enSub.text,
+            ru: bestMatch ? bestMatch.text : '',
+            start: Math.min(enSub.start, bestMatch ? bestMatch.start : enSub.start),
+            end: Math.max(enSub.end, bestMatch ? bestMatch.end : enSub.end)
+        });
+    }
+    
+    updateStatus(`Синхронизировано ${syncedSubtitles.length} пар`);
+}
+
+// ========== ОТСЛЕЖИВАНИЕ СУБТИТРОВ ==========
+function startSubtitleTracking() {
+    if (subtitleInterval) clearInterval(subtitleInterval);
+    
+    subtitleInterval = setInterval(() => {
+        if (!videoPlayer.paused && !videoPlayer.ended) {
+            showSubtitlesAtTime(videoPlayer.currentTime);
+        }
+    }, 100);
+}
+
+function showSubtitlesAtTime(currentTime) {
+    if (syncedSubtitles.length === 0) {
+        const enSub = findSubtitleAtTime(englishSubtitles, currentTime);
+        const ruSub = findSubtitleAtTime(russianSubtitles, currentTime);
+        renderSubtitles(enSub, ruSub);
+        return;
+    }
+    
+    let foundIndex = -1;
+    for (let i = 0; i < syncedSubtitles.length; i++) {
+        const pair = syncedSubtitles[i];
+        if (currentTime >= pair.start - 0.1 && currentTime <= pair.end + 0.1) {
+            foundIndex = i;
+            break;
+        }
+    }
+    
+    if (foundIndex !== -1 && foundIndex !== currentSubtitleIndex && currentSubtitleMode === 'dual-column') {
+        currentSubtitleIndex = foundIndex;
+        subtitleHistory.push(foundIndex);
+        
+        if (subtitleHistory.length > 10) {
+            subtitleHistory.shift();
+        }
+    } else if (foundIndex === -1) {
+        currentSubtitleIndex = -1;
+    }
+    
+    const currentPair = foundIndex !== -1 ? syncedSubtitles[foundIndex] : null;
+    renderSubtitlesFromPair(currentPair);
+}
+
+function findSubtitleAtTime(subtitles, time) {
+    if (!subtitles || subtitles.length === 0) return null;
+    
+    for (const sub of subtitles) {
+        if (time >= sub.start - 0.1 && time <= sub.end + 0.1) {
+            return sub;
+        }
+    }
+    return null;
+}
+
+// ========== РЕНДЕР СУБТИТРОВ ==========
+function renderSubtitlesFromPair(currentPair) {
+    if (!currentPair && currentSubtitleMode !== 'dual-column') {
+        subtitlesContainer.innerHTML = '';
+        return;
+    }
+    
+    let html = '';
+    
+    switch(currentSubtitleMode) {
+        case 'english-only':
+            html = currentPair ? `<div class="subtitles-single">${highlightWords(currentPair.en)}</div>` : '';
+            break;
+            
+        case 'russian-only':
+            html = currentPair ? `<div class="subtitles-single">${currentPair.ru}</div>` : '';
+            break;
+            
+        case 'sequential':
+            if (currentPair) {
+                html = `
+                    <div class="subtitles-sequential">
+                        ${currentPair.en ? `<div class="english-text">${highlightWords(currentPair.en)}</div>` : ''}
+                        ${currentPair.en && currentPair.ru ? '<div class="divider"></div>' : ''}
+                        ${currentPair.ru ? `<div class="russian-text">${currentPair.ru}</div>` : ''}
+                    </div>
+                `;
+            }
+            break;
+            
+        case 'dual-column':
+        default:
+            let historyHtml = '';
+            if (subtitleHistory.length > 0) {
+                historyHtml = '<div class="subtitles-history">';
+                const historyToShow = currentPair ? subtitleHistory.slice(0, -1) : subtitleHistory;
+                
+                historyToShow.forEach(pairIndex => {
+                    const pair = syncedSubtitles[pairIndex];
+                    if (pair) {
+                        historyHtml += `
+                            <div class="subtitles-history-item">
+                                <div class="subtitles-dual-column">
+                                    <div class="subtitles-english">${pair.en ? highlightWords(pair.en) : ''}</div>
+                                    <div class="subtitles-russian">${pair.ru ? pair.ru : ''}</div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+                historyHtml += '</div>';
+            }
+            
+            const currentHtml = currentPair ? `
+                <div class="subtitles-current">
+                    <div class="subtitles-dual-column">
+                        <div class="subtitles-english">${currentPair.en ? highlightWords(currentPair.en) : ''}</div>
+                        <div class="subtitles-russian">${currentPair.ru ? currentPair.ru : ''}</div>
+                    </div>
+                </div>
+            ` : '';
+            
+            html = historyHtml + currentHtml;
+            break;
+    }
+    
+    subtitlesContainer.innerHTML = html;
+    
+    const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || 
+                           document.mozFullScreenElement || document.msFullscreenElement);
+    
+    if (isFullscreen && subtitlesContainer && html) {
+        subtitlesContainer.style.display = 'flex';
+        subtitlesContainer.style.visibility = 'visible';
+        subtitlesContainer.style.opacity = '1';
+    }
+}
+
+function renderSubtitles(enSub, ruSub) {
+    const enText = enSub ? enSub.text : '';
+    const ruText = ruSub ? ruSub.text : '';
+    
+    if (!enText && !ruText) {
+        subtitlesContainer.innerHTML = '';
+        return;
+    }
+    
+    let html = '';
+    
+    switch(currentSubtitleMode) {
+        case 'english-only':
+            html = `<div class="subtitles-single">${highlightWords(enText)}</div>`;
+            break;
+        case 'russian-only':
+            html = `<div class="subtitles-single">${ruText}</div>`;
+            break;
+        default:
+            html = `
+                <div class="subtitles-dual-column">
+                    <div class="subtitles-english">${enText ? highlightWords(enText) : ''}</div>
+                    <div class="subtitles-russian">${ruText ? ruText : ''}</div>
+                </div>
+            `;
+    }
+    
+    subtitlesContainer.innerHTML = html;
+}
+
+// ========== ПОДСВЕТКА СЛОВ ==========
+function highlightWords(text) {
+    if (!text || !highlightRegex) return text;
+    
+    return text.replace(highlightRegex, match => {
+        return `<span class="highlight-word">${match}</span>`;
+    });
+}
+
+// ========== УПРАВЛЕНИЕ РЕЖИМАМИ ==========
+function changeSubtitleMode(mode) {
+    currentSubtitleMode = mode;
+    subtitleHistory = [];
+    currentSubtitleIndex = -1;
+    showSubtitlesAtTime(videoPlayer.currentTime);
+}
+
+// ========== ПОЛНОЭКРАННЫЙ РЕЖИМ ==========
+function toggleFullscreen() {
+    const container = document.getElementById('videoContainer');
+    if (!container) return;
+    
+    if (!document.fullscreenElement) {
+        const requestFullscreen = container.requestFullscreen || 
+                                 container.webkitRequestFullscreen || 
+                                 container.mozRequestFullScreen || 
+                                 container.msRequestFullscreen;
+        
+        if (requestFullscreen) {
+            requestFullscreen.call(container).then(() => {
+                document.body.classList.add('fullscreen-mode');
+                
+                for (let i = 0; i < 5; i++) {
+                    setTimeout(() => {
+                        showSubtitlesAtTime(videoPlayer.currentTime);
+                        if (subtitlesContainer) {
+                            subtitlesContainer.style.display = 'flex';
+                            subtitlesContainer.style.visibility = 'visible';
+                            subtitlesContainer.style.opacity = '1';
+                        }
+                    }, i * 200);
+                }
+            }).catch(err => {
+                updateStatus('Ошибка fullscreen: ' + err.message);
+            });
+        }
+    } else {
+        const exitFullscreen = document.exitFullscreen || 
+                              document.webkitExitFullscreen || 
+                              document.mozCancelFullScreen || 
+                              document.msExitFullscreen;
+        
+        if (exitFullscreen) {
+            exitFullscreen.call(document).then(() => {
+                document.body.classList.remove('fullscreen-mode');
+            });
+        }
+    }
+}
+
+document.addEventListener('fullscreenchange', handleFullscreenChange);
+document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+function handleFullscreenChange() {
+    const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || 
+                           document.mozFullScreenElement || document.msFullscreenElement);
+    
+    if (isFullscreen) {
+        document.body.classList.add('fullscreen-mode');
+    } else {
+        document.body.classList.remove('fullscreen-mode');
+    }
+    
+    for (let i = 0; i < 10; i++) {
+        setTimeout(() => {
+            showSubtitlesAtTime(videoPlayer.currentTime);
+            if (subtitlesContainer) {
+                subtitlesContainer.style.display = 'flex';
+                subtitlesContainer.style.visibility = 'visible';
+                subtitlesContainer.style.opacity = '1';
+            }
+        }, i * 100);
+    }
+}
+
+// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+function updateStatus(message) {
+    const statusEl = document.getElementById('status');
+    if (statusEl) {
+        statusEl.textContent = message;
+    }
+    console.log('Status:', message);
+}
+
+function getVideoError(error) {
+    if (!error) return 'Неизвестная ошибка';
+    switch (error.code) {
+        case error.MEDIA_ERR_ABORTED: return 'Воспроизведение прервано';
+        case error.MEDIA_ERR_NETWORK: return 'Ошибка сети';
+        case error.MEDIA_ERR_DECODE: return 'Ошибка декодирования';
+        case error.MEDIA_ERR_SRC_NOT_SUPPORTED: return 'Формат не поддерживается';
+        default: return 'Неизвестная ошибка';
+    }
+}
+
+// ========== ОБРАБОТЧИКИ СОБЫТИЙ ВИДЕО ==========
+videoPlayer.addEventListener('ended', function() {
+    if (subtitleInterval) clearInterval(subtitleInterval);
+    subtitlesContainer.innerHTML = '';
+    subtitleHistory = [];
+    currentSubtitleIndex = -1;
+});
+
+videoPlayer.addEventListener('play', function() {
+    if (englishSubtitles.length > 0 || russianSubtitles.length > 0) {
+        startSubtitleTracking();
+    }
+});
+
+videoPlayer.addEventListener('seeked', function() {
+    subtitleHistory = [];
+    currentSubtitleIndex = -1;
+    showSubtitlesAtTime(videoPlayer.currentTime);
+});
+    </script>
 </body>
 </html>
